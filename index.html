@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>スマホ樹高測定（ポール基準）</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            text-align: center;
+            padding: 20px;
+            background-color: #f0f4f8;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .sensor-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #007bff;
+            margin: 10px 0;
+            font-variant-numeric: tabular-nums;
+        }
+        .label {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        .input-group {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+        input[type="number"] {
+            font-size: 1.2rem;
+            padding: 8px;
+            width: 80px;
+            text-align: center;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1rem;
+            margin: 8px 0;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-weight: bold;
+        }
+        /* ボタンの色分け */
+        #btn-base { background-color: #6c757d; color: white; } /* 根元：地面っぽい色 */
+        #btn-pole { background-color: #e67e22; color: white; } /* ポール：目立つ色 */
+        #btn-top { background-color: #28a745; color: white; }  /* 木の頂点：緑 */
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        button:active {
+            transform: scale(0.98);
+        }
+        .result-box {
+            background-color: #e8f5e9;
+            border: 2px solid #28a745;
+            color: #1b5e20;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+        .result-value {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        #ios-permission-btn {
+            background-color: #007bff;
+            color: white;
+            display: none; /* 初期状態は非表示 */
+        }
+        .step-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #ddd;
+            margin-right: 5px;
+        }
+        .step-done {
+            background-color: #28a745;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🌲 樹高測定（ポール式）</h1>
+
+    <button id="ios-permission-btn" onclick="requestPermission()">センサーの使用を許可する</button>
+
+    <div class="card">
+        <div class="label">現在のスマホ傾き（仰角）</div>
+        <div class="sensor-value" id="current-angle">--°</div>
+        <div style="font-size:0.8rem; color:#888;">※スマホを縦に持って対象に向けてください</div>
+    </div>
+
+    <div class="card">
+        <div class="input-group">
+            <label>ポールの高さ(m):</label>
+            <input type="number" id="pole-height" value="2.0" step="0.1">
+        </div>
+
+        <button id="btn-base" onclick="recordAngle(1)">
+            <span id="step1" class="step-indicator"></span> ① ポールの根元
+        </button>
+        <div id="val-1" class="label" style="text-align:right; min-height:1.2em;"></div>
+
+        <button id="btn-pole" onclick="recordAngle(2)">
+            <span id="step2" class="step-indicator"></span> ② ポールの上端
+        </button>
+        <div id="val-2" class="label" style="text-align:right; min-height:1.2em;"></div>
+
+        <button id="btn-top" onclick="recordAngle(3)">
+            <span id="step3" class="step-indicator"></span> ③ 木の頂点
+        </button>
+        <div id="val-3" class="label" style="text-align:right; min-height:1.2em;"></div>
+    </div>
+
+    <div id="result-area" class="result-box">
+        <div>推定樹高</div>
+        <div class="result-value"><span id="tree-height">0.0</span> m</div>
+        <div style="font-size:0.9rem; margin-top:5px; color:#555;">(参考) 木までの水平距離: <span id="tree-dist">0.0</span> m</div>
+        <button onclick="resetMeasurement()" style="background:#666; margin-top:15px; font-size:0.9rem;">リセット</button>
+    </div>
+
+    <script>
+        let currentBeta = 0; // 現在のセンサー値
+        let angle1 = null; // 根元
+        let angle2 = null; // ポール上
+        let angle3 = null; // 木の頂点
+
+        // iOS判定
+        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+            document.getElementById('ios-permission-btn').style.display = 'block';
+        } else {
+            // Android等は直接開始
+            window.addEventListener('deviceorientation', handleOrientation);
+        }
+
+        function requestPermission() {
+            DeviceOrientationEvent.requestPermission()
+                .then(response => {
+                    if (response === 'granted') {
+                        document.getElementById('ios-permission-btn').style.display = 'none';
+                        window.addEventListener('deviceorientation', handleOrientation);
+                    } else {
+                        alert("センサーの許可が必要です");
+                    }
+                })
+                .catch(console.error);
+        }
+
+        function handleOrientation(event) {
+            // betaはスマホを立てると90、寝かせると0、手前に傾けると>90になることが多い（機種依存あり）
+            // 一般的なWeb標準: 
+            // 垂直(90)から、仰角(見上げる)を計算したい。
+            // 見上げるとbetaは90より小さくなる（画面が上を向くため）
+            // 仰角 = 90 - beta と仮定して実装します（実際の挙動に合わせて調整が必要な場合あり）
+            
+            let beta = event.beta; 
+            if (beta === null) return;
+
+            // 簡易的な仰角計算 (90度=水平, 見上げるとプラス)
+            // 機種やOSバージョンで挙動が逆転することがあるため、現地で違和感あればここを修正
+            let elevation = 90 - beta;
+
+            // 表示用に丸める
+            currentBeta = elevation;
+            document.getElementById('current-angle').textContent = elevation.toFixed(1) + "°";
+        }
+
+        function recordAngle(step) {
+            if (step === 1) {
+                angle1 = currentBeta;
+                document.getElementById('val-1').textContent = `記録: ${angle1.toFixed(1)}°`;
+                document.getElementById('step1').classList.add('step-done');
+            } else if (step === 2) {
+                angle2 = currentBeta;
+                document.getElementById('val-2').textContent = `記録: ${angle2.toFixed(1)}°`;
+                document.getElementById('step2').classList.add('step-done');
+            } else if (step === 3) {
+                angle3 = currentBeta;
+                document.getElementById('val-3').textContent = `記録: ${angle3.toFixed(1)}°`;
+                document.getElementById('step3').classList.add('step-done');
+                calculateHeight();
+            }
+        }
+
+        function calculateHeight() {
+            const h = parseFloat(document.getElementById('pole-height').value);
+            
+            // 角度をラジアンに変換
+            const r1 = angle1 * (Math.PI / 180);
+            const r2 = angle2 * (Math.PI / 180);
+            const r3 = angle3 * (Math.PI / 180);
+
+            // タンジェント計算
+            const t1 = Math.tan(r1);
+            const t2 = Math.tan(r2);
+            const t3 = Math.tan(r3);
+
+            // 分母が0にならないかチェック（ほぼ同じ角度の場合など）
+            if (Math.abs(t2 - t1) < 0.001) {
+                alert("エラー: 根元とポールの角度差が小さすぎます。もう少し木に近づくか、ポールが見やすい位置で測定してください。");
+                return;
+            }
+
+            // 公式: H = h * (tan3 - tan1) / (tan2 - tan1)
+            const H = h * (t3 - t1) / (t2 - t1);
+            
+            // 距離D = h / (tan2 - tan1)
+            const D = h / (t2 - t1);
+
+            document.getElementById('tree-height').textContent = H.toFixed(2);
+            document.getElementById('tree-dist').textContent = D.toFixed(2);
+            document.getElementById('result-area').style.display = 'block';
+        }
+
+        function resetMeasurement() {
+            angle1 = null;
+            angle2 = null;
+            angle3 = null;
+            document.getElementById('val-1').textContent = "";
+            document.getElementById('val-2').textContent = "";
+            document.getElementById('val-3').textContent = "";
+            document.getElementById('step1').classList.remove('step-done');
+            document.getElementById('step2').classList.remove('step-done');
+            document.getElementById('step3').classList.remove('step-done');
+            document.getElementById('result-area').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
