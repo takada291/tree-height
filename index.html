@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>AR樹高測定</title>
+    <title>AR樹高測定 v1.0</title>
     <style>
         body {
             margin: 0;
             overflow: hidden;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: #000; /* カメラロード前は黒 */
+            background-color: #000;
             color: white;
         }
 
@@ -71,6 +71,13 @@
             padding: 10px;
             text-shadow: 1px 1px 3px black;
             pointer-events: none;
+        }
+        
+        .version-label {
+            font-size: 0.8rem;
+            opacity: 0.8;
+            margin-bottom: 5px;
+            color: #aaa;
         }
 
         .angle-display {
@@ -193,6 +200,7 @@
     <button id="ios-start" onclick="initApp()">カメラとセンサーを開始する</button>
 
     <div class="top-info">
+        <div class="version-label">樹高測定 v1.0</div>
         <div class="angle-display" id="angle-val">--°</div>
         <div class="instruction">腕をまっすぐ伸ばし、赤い線で狙ってください</div>
     </div>
@@ -210,7 +218,7 @@
                 <div id="dot2" class="dot"></div>
                 <div id="dot3" class="dot"></div>
             </div>
-            <div id="status-text" style="margin-bottom:10px; font-weight:bold; color:#555;">① ポールの根元 を狙って測定</div>
+            <div id="status-text" style="margin-bottom:10px; font-weight:bold; color:#555;">① ポール等の根元 を狙って測定</div>
             <button id="btn-action" onclick="measureStep()">測定</button>
         </div>
     </div>
@@ -230,161 +238,3 @@
     <script>
         // 設定
         let currentAngle = 0;
-        let step = 1;
-        let angles = { 1: null, 2: null, 3: null }; // 1:根元, 2:ポール上, 3:木頂点
-
-        // リスト生成
-        const select = document.getElementById('pole-height');
-        for(let i=1; i<=10; i++){
-            let opt = document.createElement('option');
-            opt.value = i;
-            opt.text = i;
-            if(i===2) opt.selected = true; // デフォルト2m
-            select.appendChild(opt);
-        }
-
-        // 初期化処理
-        function checkPermissions() {
-            // iOS判定
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                document.getElementById('ios-start').style.display = 'block';
-            } else {
-                initApp(); // Android/PC
-            }
-        }
-
-        async function initApp() {
-            document.getElementById('ios-start').style.display = 'none';
-
-            // 1. カメラ起動
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { 
-                        facingMode: 'environment' // 背面カメラ優先
-                    } 
-                });
-                document.getElementById('camera-view').srcObject = stream;
-            } catch (err) {
-                alert("カメラの起動に失敗しました。HTTPS環境か確認してください。\n" + err);
-            }
-
-            // 2. センサー起動 (iOS許可要求含む)
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                DeviceOrientationEvent.requestPermission()
-                    .then(response => {
-                        if (response === 'granted') {
-                            window.addEventListener('deviceorientation', handleOrientation);
-                        } else {
-                            alert("センサー許可が必要です");
-                        }
-                    })
-                    .catch(console.error);
-            } else {
-                window.addEventListener('deviceorientation', handleOrientation);
-            }
-        }
-
-        function handleOrientation(event) {
-            let beta = event.beta; 
-            if (beta === null) return;
-
-            // 角度補正ロジック
-            // 前回「見上げるとマイナス」とのことだったので、符号を反転させます。
-            // 通常: 垂直=90, 見上げ=beta減少 => (90-beta)はプラス
-            // ユーザー環境: (90-beta)がマイナス => beta > 90?
-            // 今回は、シンプルに「垂直=0」として、見上げがプラスになるよう調整します。
-            
-            // 多くの端末: 垂直=90度。見上げると値が減る。
-            // 計算式: 仰角 = 90 - beta
-            // これで「見上げ」がプラスになるはずですが、もし逆ならここを調整します。
-            // 今回は前回のフィードバックを考慮し、符号を反転させる変数を入れます。
-            
-            let tilt = 90 - beta; 
-            
-            // ※もし現場でまた「逆だ」となった場合、ここを -1 * (90 - beta) にすればOK
-            // とりあえず今回は「見上げると数値が増える（プラス方向）」を目指します。
-            
-            currentAngle = tilt;
-            document.getElementById('angle-val').textContent = currentAngle.toFixed(1) + "°";
-        }
-
-        function measureStep() {
-            angles[step] = currentAngle;
-
-            // ステップ進行UI更新
-            if(step === 1) {
-                document.getElementById('dot1').classList.remove('active');
-                document.getElementById('dot1').classList.add('done');
-                document.getElementById('dot2').classList.add('active');
-                document.getElementById('status-text').textContent = "② ポール等の上端 を狙って測定";
-                step++;
-            } else if (step === 2) {
-                document.getElementById('dot2').classList.remove('active');
-                document.getElementById('dot2').classList.add('done');
-                document.getElementById('dot3').classList.add('active');
-                document.getElementById('status-text').textContent = "③ 木の頂点 を狙って測定";
-                document.getElementById('btn-action').textContent = "計算する";
-                document.getElementById('btn-action').style.backgroundColor = "#28a745";
-                step++;
-            } else if (step === 3) {
-                calcResult();
-            }
-        }
-
-        function calcResult() {
-            const h = parseFloat(document.getElementById('pole-height').value);
-            
-            // 角度差計算 (ラジアン)
-            const r1 = angles[1] * (Math.PI / 180);
-            const r2 = angles[2] * (Math.PI / 180);
-            const r3 = angles[3] * (Math.PI / 180);
-
-            const t1 = Math.tan(r1);
-            const t2 = Math.tan(r2);
-            const t3 = Math.tan(r3);
-
-            // ゼロ除算防止
-            if (Math.abs(t2 - t1) < 0.0001) {
-                alert("エラー: 根元とポール上端の角度差が小さすぎます。もう少し近づいてください。");
-                resetApp();
-                return;
-            }
-
-            // 計算
-            // H = h * (tan3 - tan1) / (tan2 - tan1)
-            let H = h * (t3 - t1) / (t2 - t1);
-            let D = h / (t2 - t1);
-
-            // 絶対値をとっておく（逆向きに計算してマイナスになっても距離/高さは正なので）
-            H = Math.abs(H);
-            D = Math.abs(D);
-
-            // 結果表示
-            document.getElementById('res-height').textContent = H.toFixed(1);
-            document.getElementById('res-dist').textContent = D.toFixed(1);
-            document.getElementById('res-pole').textContent = h;
-            
-            document.getElementById('result-view').style.display = 'flex';
-        }
-
-        function resetApp() {
-            step = 1;
-            angles = { 1: null, 2: null, 3: null };
-            document.getElementById('result-view').style.display = 'none';
-            
-            // ドットリセット
-            document.getElementById('dot1').className = "dot active";
-            document.getElementById('dot2').className = "dot";
-            document.getElementById('dot3').className = "dot";
-            
-            document.getElementById('status-text').textContent = "① ポール等の根元 を狙って測定";
-            document.getElementById('btn-action').textContent = "測定";
-            document.getElementById('btn-action').style.backgroundColor = "#007bff";
-        }
-
-        // 起動時チェック
-        window.onload = checkPermissions;
-
-    </script>
-</body>
-</html>
