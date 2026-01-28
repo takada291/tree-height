@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>AR樹高測定 v1.1</title>
+    <title>樹高測定</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#28a745"> 
     <style>
@@ -151,10 +151,11 @@
     <div class="crosshair-v"></div>
 
     <div id="start-overlay">
-        <h1 style="margin-bottom:10px;">AR樹高測定 v1.1</h1>
+        <h1 style="margin-bottom:10px;">樹高測定 v1.1</h1>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:30px;">
-            カメラとセンサーを使用します。<br>
-            ブラウザの許可画面が出たら「許可」してください。
+            端末のカメラと角度センサーを使用します。<br>
+            ブラウザの許可画面が出たら「許可」してください。<br>
+            腕をまっすぐ伸ばし十字線に合わせ角度を測ります。
         </p>
         <button class="btn-start" onclick="startApp()">測定スタート</button>
         <p id="error-log" style="color:red; margin-top:20px; font-size:0.8rem;"></p>
@@ -351,4 +352,5 @@
      </script>
 </body>
 </html>
+
 
