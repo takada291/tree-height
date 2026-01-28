@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tree-height-v1.0.0';
+const CACHE_NAME = 'tree-height-v1.1.1';
 const urlsToCache = [
   './',
   'index.html',
@@ -36,4 +36,5 @@ self.addEventListener('fetch', (event) => {
       return caches.match(event.request);
     })
   );
+
 });
