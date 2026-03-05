@@ -25,7 +25,7 @@
             object-fit: cover;
             z-index: -1;
             background-color: #000;
-            /* ズーム用の設定を追加 */
+            /* ズーム用の設定 */
             transform-origin: center center;
             transition: transform 0.1s ease-out;
         }
@@ -65,7 +65,7 @@
             padding: 20px 20px 40px 20px;
             box-sizing: border-box;
             background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 100%);
-            display: none; /* スタート後に表示 */
+            display: none;
             flex-direction: column;
             gap: 10px;
         }
@@ -171,7 +171,7 @@
     <div class="crosshair-v"></div>
 
     <div id="start-overlay">
-        <h1 style="margin-bottom:10px;">樹高測定 v1.2<br><small>(ズーム機能搭載)</small></h1>
+        <h1 style="margin-bottom:10px;">樹高測定 v1.3<br><small>(高画質10倍ズーム)</small></h1>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:30px;">
             端末のカメラと角度センサーを使用します。<br>
             ブラウザの許可画面が出たら「許可」してください。<br>
@@ -188,8 +188,8 @@
         
         <div class="zoom-control">
             <span style="font-size: 1.2rem;">🔍</span>
-            <input type="range" id="zoom-slider" min="1" max="5" step="0.1" value="1" oninput="updateZoom()">
-            <span id="zoom-val" style="font-weight: bold; width: 40px; text-align: right;">1.0x</span>
+            <input type="range" id="zoom-slider" min="1" max="10" step="0.1" value="1" oninput="updateZoom()">
+            <span id="zoom-val" style="font-weight: bold; width: 45px; text-align: right;">1.0x</span>
         </div>
     </div>
 
@@ -228,7 +228,7 @@
         let rawBeta = 0;
         let step = 1;
         let angles = { 1: null, 2: null, 3: null }; 
-        let isInverted = false; // 角度反転フラグ
+        let isInverted = false;
 
         // 高さリスト生成
         const select = document.getElementById('pole-height');
@@ -252,8 +252,13 @@
                     }
                 }
 
+                // 高画質（フルHD〜4K）を要求する魔法のコード
                 const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: 'environment' } 
+                    video: { 
+                        facingMode: 'environment',
+                        width: { ideal: 1920, max: 3840 },
+                        height: { ideal: 1080, max: 2160 }
+                    } 
                 });
                 document.getElementById('camera-view').srcObject = stream;
 
@@ -295,7 +300,6 @@
         function updateZoom() {
             const zoomVal = document.getElementById('zoom-slider').value;
             document.getElementById('zoom-val').textContent = parseFloat(zoomVal).toFixed(1) + "x";
-            // 映像自体を拡大させる（中心点は維持されるので照準はズレません）
             document.getElementById('camera-view').style.transform = `scale(${zoomVal})`;
         }
 
@@ -358,13 +362,10 @@
             document.getElementById('status-text').textContent = "① ポール根元 を狙う";
             document.getElementById('btn-action').textContent = "測定";
             document.getElementById('btn-action').style.backgroundColor = "#007bff";
-            
-            // ズームもリセットするかはお好みですが、ここでは保持しておきます
         }
     </script>
     
     <script>
-    // Service Workerの登録
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {
             navigator.serviceWorker.register('./sw.js').then(function(registration) {
