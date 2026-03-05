@@ -25,7 +25,6 @@
             object-fit: cover;
             z-index: -1;
             background-color: #000;
-            /* ズーム用の設定 */
             transform-origin: center center;
             transition: transform 0.1s ease-out;
         }
@@ -36,122 +35,99 @@
             top: 50%; left: 0; width: 100%; height: 2px;
             background-color: rgba(255, 0, 0, 0.7);
             pointer-events: none;
+            z-index: 5;
         }
         .crosshair-v {
             position: fixed;
             top: 20%; left: 50%; width: 2px; height: 60%;
             background-color: rgba(255, 0, 0, 0.4);
             pointer-events: none;
+            z-index: 5;
         }
 
-        /* スタート画面（オーバーレイ） */
-        #start-overlay {
+        /* リアルタイム樹高表示 (ステップ3用) */
+        #realtime-height {
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9);
-            z-index: 999;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            padding: 20px;
+            top: 30%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3rem;
+            font-weight: bold;
+            color: #28a745;
+            text-shadow: 2px 2px 4px #000, -1px -1px 0 #fff;
+            pointer-events: none;
+            display: none;
+            z-index: 10;
+        }
+
+        /* スタート画面 */
+        #start-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px;
         }
         
         /* UIコンテナ */
         .ui-container {
-            position: absolute;
-            bottom: 0; left: 0; width: 100%;
-            padding: 20px 20px 40px 20px;
-            box-sizing: border-box;
+            position: absolute; bottom: 0; left: 0; width: 100%;
+            padding: 20px 20px 40px 20px; box-sizing: border-box;
             background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 100%);
-            display: none;
-            flex-direction: column;
-            gap: 10px;
+            display: none; flex-direction: column; gap: 10px; z-index: 20;
         }
 
         .top-info {
-            position: absolute;
-            top: 0; left: 0; width: 100%;
-            padding: 10px;
-            background: rgba(0,0,0,0.3);
-            text-align: center;
-            pointer-events: none;
+            position: absolute; top: 0; left: 0; width: 100%;
+            padding: 10px; background: rgba(0,0,0,0.3);
+            text-align: center; pointer-events: none; z-index: 20;
         }
 
-        .debug-info {
-            font-size: 0.7rem;
-            color: #aaa;
-            margin-bottom: 5px;
-        }
+        .debug-info { font-size: 0.7rem; color: #aaa; margin-bottom: 5px; }
+        .angle-display { font-size: 2.5rem; font-weight: bold; color: #ffcc00; text-shadow: 2px 2px 0px #000; }
 
-        .angle-display {
-            font-size: 2.5rem;
-            font-weight: bold;
-            color: #ffcc00;
-            text-shadow: 2px 2px 0px #000;
-        }
-
-        /* ズームスライダーエリア */
+        /* ズームスライダー */
         .zoom-control {
-            margin: 15px auto 0 auto;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            background: rgba(0,0,0,0.6);
-            padding: 8px 15px;
-            border-radius: 20px;
-            width: fit-content;
-            pointer-events: auto; /* スライダー操作を許可 */
+            margin: 15px auto 0 auto; display: flex; align-items: center; justify-content: center; gap: 10px;
+            background: rgba(0,0,0,0.6); padding: 8px 15px; border-radius: 20px; width: fit-content; pointer-events: auto;
         }
-        .zoom-control input[type="range"] {
-            width: 150px;
-        }
+        .zoom-control input[type="range"] { width: 150px; }
 
         /* ボタン類 */
         button {
-            padding: 15px;
-            font-size: 1.2rem;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            color: white;
-            transition: transform 0.1s;
+            padding: 15px; font-size: 1.2rem; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; color: white; transition: transform 0.1s;
         }
         button:active { transform: scale(0.98); }
-
         .btn-primary { background-color: #007bff; width: 100%; margin-bottom: 10px; }
-        .btn-action { background-color: #007bff; width: 100%; font-size: 1.3rem; padding: 18px; }
+        .btn-success { background-color: #28a745; width: 100%; margin-bottom: 10px; }
+        .btn-info { background-color: #17a2b8; width: 100%; margin-bottom: 10px; }
+        .btn-secondary { background-color: #6c757d; width: 100%; margin-bottom: 10px; }
         .btn-start { background-color: #28a745; font-size: 1.5rem; padding: 20px 40px; border-radius: 50px; }
         
         .toggle-btn {
-            background: rgba(255,255,255,0.2);
-            font-size: 0.8rem;
-            padding: 5px 10px;
-            border-radius: 4px;
-            pointer-events: auto;
-            margin-top: 5px;
+            background: rgba(255,255,255,0.2); font-size: 0.8rem; padding: 5px 10px; border-radius: 4px; pointer-events: auto; margin-top: 5px;
         }
 
         /* 結果表示 */
         .result-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9);
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 100;
         }
         .result-box {
-            background: white; color: #333;
-            padding: 30px; border-radius: 15px;
-            text-align: center; width: 85%; max-width: 400px;
+            background: white; color: #333; padding: 30px; border-radius: 15px; text-align: center; width: 85%; max-width: 400px;
         }
         .big-number { font-size: 3.5rem; font-weight: bold; color: #28a745; margin: 10px 0; }
+
+        /* スクショ撮影UI */
+        #screenshot-ui {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; flex-direction: column; justify-content: space-between; z-index: 50;
+        }
+        .screenshot-info {
+            margin: 20px; padding: 15px; background: rgba(0,0,0,0.6); border: 2px solid #fff; border-radius: 10px;
+            color: white; font-size: 1.2rem; font-weight: bold; text-shadow: 1px 1px 3px #000;
+        }
+        .screenshot-controls {
+            margin: 20px; display: flex; flex-direction: column; gap: 10px;
+        }
 
         /* ステップ */
         .step-dots { display: flex; justify-content: center; gap: 10px; margin-bottom: 15px; }
@@ -167,15 +143,15 @@
 
     <video id="camera-view" autoplay playsinline muted></video>
 
-    <div class="crosshair"></div>
-    <div class="crosshair-v"></div>
+    <div class="crosshair" id="ch-h"></div>
+    <div class="crosshair-v" id="ch-v"></div>
+
+    <div id="realtime-height">0.0 m</div>
 
     <div id="start-overlay">
-        <h1 style="margin-bottom:10px;">樹高測定 v1.3<br><small>(高画質10倍ズーム)</small></h1>
+        <h1 style="margin-bottom:10px;">樹高測定 v1.4<br><small>(ズーム・スクショ保存対応)</small></h1>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:30px;">
-            端末のカメラと角度センサーを使用します。<br>
-            ブラウザの許可画面が出たら「許可」してください。<br>
-            腕をまっすぐ伸ばし十字線に合わせ角度を測ります。
+            位置情報(GPS)へのアクセスを許可すると、<br>証拠写真に緯度経度を合成できます。
         </p>
         <button class="btn-start" onclick="startApp()">測定スタート</button>
         <p id="error-log" style="color:red; margin-top:20px; font-size:0.8rem;"></p>
@@ -207,7 +183,7 @@
             </div>
 
             <div id="status-text" style="font-weight:bold; margin-bottom:10px; font-size:1.1rem;">① ポール根元 を狙う</div>
-            <button class="btn-action" id="btn-action" onclick="measureStep()">測定</button>
+            <button class="btn-primary" id="btn-action" onclick="measureStep()">測定</button>
         </div>
     </div>
 
@@ -216,9 +192,21 @@
             <div>測定結果</div>
             <div class="big-number"><span id="res-height">0.0</span> m</div>
             <div style="color:#666; margin-bottom:20px; font-size:0.9rem;">
-                距離: <span id="res-dist">--</span> m / ポール: <span id="res-pole">--</span> m
+                水平距離: <span id="res-dist">--</span> m
             </div>
-            <button class="btn-primary" onclick="resetApp()" style="background:#6c757d;">もう一度測る</button>
+            <button class="btn-info" onclick="startScreenshotMode()">📷 全体像をスクショ保存</button>
+            <button class="btn-secondary" onclick="resetApp()">保存せずに次へ</button>
+        </div>
+    </div>
+
+    <div id="screenshot-ui">
+        <div class="screenshot-info" id="screenshot-info-box">
+            樹高: <span id="ss-height">--</span> m<br>
+            <span id="ss-gps" style="font-size:0.9rem; font-weight:normal;">位置情報取得中...</span>
+        </div>
+        <div class="screenshot-controls">
+            <button class="btn-success" style="font-size:1.5rem; padding:20px;" onclick="takeScreenshot()">⭕ 合成して保存 (ダウンロード)</button>
+            <button class="btn-secondary" onclick="resetApp()">キャンセル (次へ)</button>
         </div>
     </div>
 
@@ -229,6 +217,10 @@
         let step = 1;
         let angles = { 1: null, 2: null, 3: null }; 
         let isInverted = false;
+        
+        let finalHeightVal = "0.0";
+        let currentLat = null;
+        let currentLon = null;
 
         // 高さリスト生成
         const select = document.getElementById('pole-height');
@@ -252,7 +244,7 @@
                     }
                 }
 
-                // 高画質（フルHD〜4K）を要求する魔法のコード
+                // 高画質要求
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     video: { 
                         facingMode: 'environment',
@@ -261,7 +253,6 @@
                     } 
                 });
                 document.getElementById('camera-view').srcObject = stream;
-
                 window.addEventListener('deviceorientation', handleOrientation);
 
                 document.getElementById('start-overlay').style.display = 'none';
@@ -271,7 +262,7 @@
             } catch (e) {
                 console.error(e);
                 errLog.textContent = "エラー: " + e.message;
-                alert("起動エラー: " + e.message + "\nHTTPS接続か確認してください。");
+                alert("起動エラー: " + e.message);
             }
         }
 
@@ -283,20 +274,32 @@
             document.getElementById('raw-beta').textContent = beta.toFixed(1);
 
             let tilt = 90 - beta;
-
-            if (isInverted) {
-                tilt = -1 * tilt;
-            }
-
+            if (isInverted) tilt = -1 * tilt;
             currentAngle = tilt;
             document.getElementById('angle-val').textContent = currentAngle.toFixed(1) + "°";
+
+            // 🌟 追加機能1: リアルタイム樹高計算 (ステップ3待ち状態の時)
+            if (step === 3 && angles[1] !== null && angles[2] !== null) {
+                const h = parseFloat(document.getElementById('pole-height').value);
+                const r1 = angles[1] * (Math.PI / 180);
+                const r2 = angles[2] * (Math.PI / 180);
+                const r3 = currentAngle * (Math.PI / 180);
+
+                const t1 = Math.tan(r1);
+                const t2 = Math.tan(r2);
+                const t3 = Math.tan(r3);
+
+                if (Math.abs(t2 - t1) > 0.0001) {
+                    let H = h * (t3 - t1) / (t2 - t1);
+                    document.getElementById('realtime-height').textContent = Math.abs(H).toFixed(1) + " m";
+                }
+            }
         }
 
         function toggleInvert() {
             isInverted = !isInverted;
         }
 
-        // ズーム機能の処理
         function updateZoom() {
             const zoomVal = document.getElementById('zoom-slider').value;
             document.getElementById('zoom-val').textContent = parseFloat(zoomVal).toFixed(1) + "x";
@@ -317,6 +320,9 @@
                 document.getElementById('status-text').textContent = "③ 木の頂点 を狙う";
                 document.getElementById('btn-action').textContent = "計算実行";
                 document.getElementById('btn-action').style.backgroundColor = "#28a745";
+                
+                // リアルタイム表示をON
+                document.getElementById('realtime-height').style.display = 'block';
                 step++;
             } else if (step === 3) {
                 calcResult();
@@ -324,8 +330,10 @@
         }
 
         function calcResult() {
+            // リアルタイム表示をOFF
+            document.getElementById('realtime-height').style.display = 'none';
+
             const h = parseFloat(document.getElementById('pole-height').value);
-            
             const r1 = angles[1] * (Math.PI / 180);
             const r2 = angles[2] * (Math.PI / 180);
             const r3 = angles[3] * (Math.PI / 180);
@@ -343,17 +351,123 @@
             let H = h * (t3 - t1) / (t2 - t1);
             let D = h / (t2 - t1);
 
-            document.getElementById('res-height').textContent = Math.abs(H).toFixed(1);
+            finalHeightVal = Math.abs(H).toFixed(1);
+
+            document.getElementById('res-height').textContent = finalHeightVal;
             document.getElementById('res-dist').textContent = Math.abs(D).toFixed(1);
-            document.getElementById('res-pole').textContent = h;
             
             document.getElementById('result-view').style.display = 'flex';
         }
 
+        // 🌟 追加機能2: スクショ保存モード起動
+        function startScreenshotMode() {
+            // UIや照準線を隠す
+            document.getElementById('result-view').style.display = 'none';
+            document.getElementById('main-ui').style.display = 'none';
+            document.getElementById('top-ui').style.display = 'none';
+            document.getElementById('ch-h').style.display = 'none';
+            document.getElementById('ch-v').style.display = 'none';
+
+            // ズームを1倍に戻して全体像を表示
+            document.getElementById('zoom-slider').value = 1;
+            updateZoom();
+
+            // スクショUIを表示
+            document.getElementById('screenshot-ui').style.display = 'flex';
+            document.getElementById('ss-height').textContent = finalHeightVal;
+            document.getElementById('ss-gps').textContent = "GPS取得中...";
+
+            // GPS取得
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        currentLat = pos.coords.latitude;
+                        currentLon = pos.coords.longitude;
+                        document.getElementById('ss-gps').innerHTML = `Lat: ${currentLat.toFixed(5)}<br>Lon: ${currentLon.toFixed(5)}`;
+                    },
+                    (err) => {
+                        document.getElementById('ss-gps').textContent = "GPS取得失敗 (設定をご確認ください)";
+                    },
+                    { enableHighAccuracy: true, timeout: 5000 }
+                );
+            } else {
+                document.getElementById('ss-gps').textContent = "GPS非対応端末です";
+            }
+        }
+
+        // 🌟 追加機能2: 画像合成とダウンロード
+        function takeScreenshot() {
+            const video = document.getElementById('camera-view');
+            const canvas = document.createElement('canvas');
+            
+            // ビデオの実際の解像度を使用
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+
+            // 映像をCanvasに描画
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // テキストの描画設定
+            // 画面サイズに応じてフォントサイズを調整 (幅の約3%)
+            const fontSize = Math.floor(canvas.width * 0.03); 
+            ctx.font = `bold ${fontSize}px sans-serif`;
+            ctx.fillStyle = "#ffffff";     // 文字色 白
+            ctx.strokeStyle = "#000000";   // 縁取り 黒
+            ctx.lineWidth = Math.max(2, fontSize / 10);
+
+            // 描画するテキスト
+            const textHeight = `樹高: ${finalHeightVal} m`;
+            const textGPS = currentLat ? `Lat: ${currentLat.toFixed(5)}, Lon: ${currentLon.toFixed(5)}` : "GPSデータなし";
+            const dateStr = new Date().toLocaleString();
+
+            // 余白
+            const marginX = fontSize;
+            const marginY = fontSize * 1.5;
+
+            // 1行目: 樹高
+            ctx.strokeText(textHeight, marginX, marginY);
+            ctx.fillText(textHeight, marginX, marginY);
+            
+            // 2行目: GPS
+            ctx.strokeText(textGPS, marginX, marginY + fontSize * 1.2);
+            ctx.fillText(textGPS, marginX, marginY + fontSize * 1.2);
+
+            // 3行目: 日時
+            ctx.strokeText(dateStr, marginX, marginY + fontSize * 2.4);
+            ctx.fillText(dateStr, marginX, marginY + fontSize * 2.4);
+
+            // 画像化してダウンロード
+            const dataURL = canvas.toDataURL('image/jpeg', 0.9);
+            const a = document.createElement('a');
+            a.href = dataURL;
+            // ファイル名を「TreeHeight_日時.jpg」にする
+            const timeTag = new Date().toISOString().replace(/[:.]/g, '-').slice(0,19);
+            a.download = `TreeHeight_${timeTag}.jpg`;
+            a.click();
+
+            alert("画像を保存しました！");
+
+            // 撮影後は通常画面に戻る
+            resetApp();
+        }
+
         function resetApp() {
+            // 全て初期状態に戻す
             step = 1;
             angles = { 1: null, 2: null, 3: null };
+            currentLat = null;
+            currentLon = null;
+            
+            // 表示リセット
             document.getElementById('result-view').style.display = 'none';
+            document.getElementById('screenshot-ui').style.display = 'none';
+            document.getElementById('realtime-height').style.display = 'none';
+            
+            document.getElementById('top-ui').style.display = 'block';
+            document.getElementById('main-ui').style.display = 'flex';
+            document.getElementById('ch-h').style.display = 'block';
+            document.getElementById('ch-v').style.display = 'block';
             
             document.getElementById('dot1').className = "dot active";
             document.getElementById('dot2').className = "dot";
@@ -362,19 +476,19 @@
             document.getElementById('status-text').textContent = "① ポール根元 を狙う";
             document.getElementById('btn-action').textContent = "測定";
             document.getElementById('btn-action').style.backgroundColor = "#007bff";
+            
+            // ズームを1倍にリセット
+            document.getElementById('zoom-slider').value = 1;
+            updateZoom();
         }
     </script>
     
     <script>
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {
-            navigator.serviceWorker.register('./sw.js').then(function(registration) {
-                console.log('ServiceWorker registration successful with scope: ', registration.scope);
-            }, function(err) {
-                console.log('ServiceWorker registration failed: ', err);
-            });
+            navigator.serviceWorker.register('./sw.js');
         });
       }
-     </script>
+    </script>
 </body>
 </html>
