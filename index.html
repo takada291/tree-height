@@ -45,7 +45,7 @@
             z-index: 5;
         }
 
-        /* リアルタイム樹高表示 (ステップ3用) */
+        /* リアルタイム樹高表示 */
         #realtime-height {
             position: fixed;
             top: 30%;
@@ -137,6 +137,14 @@
         
         select { font-size: 1.2rem; padding: 8px; border-radius: 5px; }
         .control-panel { background: rgba(255,255,255,0.95); padding: 20px; border-radius: 15px; color: #333; text-align: center; }
+        
+        /* トースト（改良版） */
+        .toast {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(40, 167, 69, 0.9); color: #fff; padding: 15px 30px;
+            border-radius: 30px; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            display: none; z-index: 200; pointer-events: none;
+        }
     </style>
 </head>
 <body>
@@ -149,7 +157,7 @@
     <div id="realtime-height">0.0 m</div>
 
     <div id="start-overlay">
-        <h1 style="margin-bottom:10px;">樹高測定 v1.4<br><small>(ズーム・スクショ保存対応)</small></h1>
+        <h1 style="margin-bottom:10px;">樹高測定 v1.5<br><small>ズーム機能・画像保存版</small></h1>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:30px;">
             位置情報(GPS)へのアクセスを許可すると、<br>証拠写真に緯度経度を合成できます。
         </p>
@@ -210,6 +218,8 @@
         </div>
     </div>
 
+    <div id="toast" class="toast">画像を保存しました！</div>
+
     <script>
         // 変数
         let currentAngle = 0;
@@ -244,7 +254,6 @@
                     }
                 }
 
-                // 高画質要求
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     video: { 
                         facingMode: 'environment',
@@ -278,7 +287,7 @@
             currentAngle = tilt;
             document.getElementById('angle-val').textContent = currentAngle.toFixed(1) + "°";
 
-            // 🌟 追加機能1: リアルタイム樹高計算 (ステップ3待ち状態の時)
+            // リアルタイム表示
             if (step === 3 && angles[1] !== null && angles[2] !== null) {
                 const h = parseFloat(document.getElementById('pole-height').value);
                 const r1 = angles[1] * (Math.PI / 180);
@@ -321,7 +330,6 @@
                 document.getElementById('btn-action').textContent = "計算実行";
                 document.getElementById('btn-action').style.backgroundColor = "#28a745";
                 
-                // リアルタイム表示をON
                 document.getElementById('realtime-height').style.display = 'block';
                 step++;
             } else if (step === 3) {
@@ -330,7 +338,6 @@
         }
 
         function calcResult() {
-            // リアルタイム表示をOFF
             document.getElementById('realtime-height').style.display = 'none';
 
             const h = parseFloat(document.getElementById('pole-height').value);
@@ -359,25 +366,20 @@
             document.getElementById('result-view').style.display = 'flex';
         }
 
-        // 🌟 追加機能2: スクショ保存モード起動
         function startScreenshotMode() {
-            // UIや照準線を隠す
             document.getElementById('result-view').style.display = 'none';
             document.getElementById('main-ui').style.display = 'none';
             document.getElementById('top-ui').style.display = 'none';
             document.getElementById('ch-h').style.display = 'none';
             document.getElementById('ch-v').style.display = 'none';
 
-            // ズームを1倍に戻して全体像を表示
             document.getElementById('zoom-slider').value = 1;
             updateZoom();
 
-            // スクショUIを表示
             document.getElementById('screenshot-ui').style.display = 'flex';
             document.getElementById('ss-height').textContent = finalHeightVal;
             document.getElementById('ss-gps').textContent = "GPS取得中...";
 
-            // GPS取得
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (pos) => {
@@ -386,7 +388,7 @@
                         document.getElementById('ss-gps').innerHTML = `Lat: ${currentLat.toFixed(5)}<br>Lon: ${currentLon.toFixed(5)}`;
                     },
                     (err) => {
-                        document.getElementById('ss-gps').textContent = "GPS取得失敗 (設定をご確認ください)";
+                        document.getElementById('ss-gps').textContent = "GPS取得失敗";
                     },
                     { enableHighAccuracy: true, timeout: 5000 }
                 );
@@ -395,71 +397,59 @@
             }
         }
 
-        // 🌟 追加機能2: 画像合成とダウンロード
         function takeScreenshot() {
             const video = document.getElementById('camera-view');
             const canvas = document.createElement('canvas');
             
-            // ビデオの実際の解像度を使用
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             const ctx = canvas.getContext('2d');
 
-            // 映像をCanvasに描画
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-            // テキストの描画設定
-            // 画面サイズに応じてフォントサイズを調整 (幅の約3%)
             const fontSize = Math.floor(canvas.width * 0.03); 
             ctx.font = `bold ${fontSize}px sans-serif`;
-            ctx.fillStyle = "#ffffff";     // 文字色 白
-            ctx.strokeStyle = "#000000";   // 縁取り 黒
+            ctx.fillStyle = "#ffffff";
+            ctx.strokeStyle = "#000000";
             ctx.lineWidth = Math.max(2, fontSize / 10);
 
-            // 描画するテキスト
             const textHeight = `樹高: ${finalHeightVal} m`;
             const textGPS = currentLat ? `Lat: ${currentLat.toFixed(5)}, Lon: ${currentLon.toFixed(5)}` : "GPSデータなし";
             const dateStr = new Date().toLocaleString();
 
-            // 余白
             const marginX = fontSize;
             const marginY = fontSize * 1.5;
 
-            // 1行目: 樹高
             ctx.strokeText(textHeight, marginX, marginY);
             ctx.fillText(textHeight, marginX, marginY);
             
-            // 2行目: GPS
             ctx.strokeText(textGPS, marginX, marginY + fontSize * 1.2);
             ctx.fillText(textGPS, marginX, marginY + fontSize * 1.2);
 
-            // 3行目: 日時
             ctx.strokeText(dateStr, marginX, marginY + fontSize * 2.4);
             ctx.fillText(dateStr, marginX, marginY + fontSize * 2.4);
 
-            // 画像化してダウンロード
             const dataURL = canvas.toDataURL('image/jpeg', 0.9);
             const a = document.createElement('a');
             a.href = dataURL;
-            // ファイル名を「TreeHeight_日時.jpg」にする
             const timeTag = new Date().toISOString().replace(/[:.]/g, '-').slice(0,19);
             a.download = `TreeHeight_${timeTag}.jpg`;
             a.click();
 
-            alert("画像を保存しました！");
+            // アラートの代わりにトーストを表示
+            const toast = document.getElementById('toast');
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 2000);
 
-            // 撮影後は通常画面に戻る
             resetApp();
         }
 
         function resetApp() {
-            // 全て初期状態に戻す
             step = 1;
             angles = { 1: null, 2: null, 3: null };
             currentLat = null;
             currentLon = null;
             
-            // 表示リセット
             document.getElementById('result-view').style.display = 'none';
             document.getElementById('screenshot-ui').style.display = 'none';
             document.getElementById('realtime-height').style.display = 'none';
@@ -477,9 +467,14 @@
             document.getElementById('btn-action').textContent = "測定";
             document.getElementById('btn-action').style.backgroundColor = "#007bff";
             
-            // ズームを1倍にリセット
             document.getElementById('zoom-slider').value = 1;
             updateZoom();
+
+            // iOS対策：カメラ映像が一時停止していたら再開させる
+            const video = document.getElementById('camera-view');
+            if (video && video.paused) {
+                video.play().catch(e => console.error("Camera play error:", e));
+            }
         }
     </script>
     
