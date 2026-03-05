@@ -25,6 +25,9 @@
             object-fit: cover;
             z-index: -1;
             background-color: #000;
+            /* ズーム用の設定を追加 */
+            transform-origin: center center;
+            transition: transform 0.1s ease-out;
         }
 
         /* 照準線 */
@@ -89,6 +92,23 @@
             text-shadow: 2px 2px 0px #000;
         }
 
+        /* ズームスライダーエリア */
+        .zoom-control {
+            margin: 15px auto 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            background: rgba(0,0,0,0.6);
+            padding: 8px 15px;
+            border-radius: 20px;
+            width: fit-content;
+            pointer-events: auto; /* スライダー操作を許可 */
+        }
+        .zoom-control input[type="range"] {
+            width: 150px;
+        }
+
         /* ボタン類 */
         button {
             padding: 15px;
@@ -151,7 +171,7 @@
     <div class="crosshair-v"></div>
 
     <div id="start-overlay">
-        <h1 style="margin-bottom:10px;">樹高測定 v1.1</h1>
+        <h1 style="margin-bottom:10px;">樹高測定 v1.2<br><small>(ズーム機能搭載)</small></h1>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:30px;">
             端末のカメラと角度センサーを使用します。<br>
             ブラウザの許可画面が出たら「許可」してください。<br>
@@ -165,6 +185,12 @@
         <div class="debug-info">Sensor Raw: <span id="raw-beta">--</span></div>
         <div class="angle-display" id="angle-val">--°</div>
         <button class="toggle-btn" onclick="toggleInvert()">🔄 角度のプラス/マイナスを反転</button>
+        
+        <div class="zoom-control">
+            <span style="font-size: 1.2rem;">🔍</span>
+            <input type="range" id="zoom-slider" min="1" max="5" step="0.1" value="1" oninput="updateZoom()">
+            <span id="zoom-val" style="font-weight: bold; width: 40px; text-align: right;">1.0x</span>
+        </div>
     </div>
 
     <div class="ui-container" id="main-ui">
@@ -213,13 +239,12 @@
             select.appendChild(opt);
         }
 
-        // スタート処理（ユーザーのアクション起点）
+        // スタート処理
         async function startApp() {
             const errLog = document.getElementById('error-log');
             errLog.textContent = "起動中...";
 
             try {
-                // 1. iOSのセンサー許可リクエスト
                 if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                     const permission = await DeviceOrientationEvent.requestPermission();
                     if (permission !== 'granted') {
@@ -227,16 +252,13 @@
                     }
                 }
 
-                // 2. カメラの起動
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     video: { facingMode: 'environment' } 
                 });
                 document.getElementById('camera-view').srcObject = stream;
 
-                // 3. センサーイベント開始
                 window.addEventListener('deviceorientation', handleOrientation);
 
-                // UI切り替え
                 document.getElementById('start-overlay').style.display = 'none';
                 document.getElementById('top-ui').style.display = 'block';
                 document.getElementById('main-ui').style.display = 'flex';
@@ -255,12 +277,8 @@
             rawBeta = beta;
             document.getElementById('raw-beta').textContent = beta.toFixed(1);
 
-            // 角度計算
-            // 標準: 垂直(90) -> 0度, 見上げ(90より小) -> プラス
-            // 式: 90 - beta
             let tilt = 90 - beta;
 
-            // もし「反転」モードなら符号を逆にする
             if (isInverted) {
                 tilt = -1 * tilt;
             }
@@ -271,14 +289,20 @@
 
         function toggleInvert() {
             isInverted = !isInverted;
-            // ボタンの見た目更新などは省略、即座に数値が変わる
+        }
+
+        // ズーム機能の処理
+        function updateZoom() {
+            const zoomVal = document.getElementById('zoom-slider').value;
+            document.getElementById('zoom-val').textContent = parseFloat(zoomVal).toFixed(1) + "x";
+            // 映像自体を拡大させる（中心点は維持されるので照準はズレません）
+            document.getElementById('camera-view').style.transform = `scale(${zoomVal})`;
         }
 
         function measureStep() {
             angles[step] = currentAngle;
 
             if(step === 1) {
-                // UI更新
                 document.getElementById('dot1').classList.replace('active', 'done');
                 document.getElementById('dot2').classList.add('active');
                 document.getElementById('status-text').textContent = "② ポール上端 を狙う";
@@ -315,7 +339,6 @@
             let H = h * (t3 - t1) / (t2 - t1);
             let D = h / (t2 - t1);
 
-            // 負の値になった場合も絶対値で表示
             document.getElementById('res-height').textContent = Math.abs(H).toFixed(1);
             document.getElementById('res-dist').textContent = Math.abs(D).toFixed(1);
             document.getElementById('res-pole').textContent = h;
@@ -335,6 +358,8 @@
             document.getElementById('status-text').textContent = "① ポール根元 を狙う";
             document.getElementById('btn-action').textContent = "測定";
             document.getElementById('btn-action').style.backgroundColor = "#007bff";
+            
+            // ズームもリセットするかはお好みですが、ここでは保持しておきます
         }
     </script>
     
@@ -352,5 +377,3 @@
      </script>
 </body>
 </html>
-
-
