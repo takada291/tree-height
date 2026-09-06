@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>樹高測定</title>
+    <title>樹高測定 v1.7</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#28a745"> 
 
@@ -77,13 +77,6 @@
             background: rgba(0,0,0,0.9); z-index: 999;
             display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px;
         }
-        
-        /* 再起動(センサー再許可)画面 */
-        #restart-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95); z-index: 1000;
-            display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px;
-        }
 
         /* UIコンテナ */
         .ui-container {
@@ -99,12 +92,9 @@
             text-align: center; pointer-events: none; z-index: 20;
         }
 
-        .debug-info { font-size: 0.7rem; color: #aaa; margin-bottom: 5px; }
-        .angle-display { font-size: 2.5rem; font-weight: bold; color: #ffcc00; text-shadow: 2px 2px 0px #000; }
-
         /* ズームスライダー */
         .zoom-control {
-            margin: 15px auto 0 auto; display: flex; align-items: center; justify-content: center; gap: 10px;
+            margin: 10px auto 0 auto; display: flex; align-items: center; justify-content: center; gap: 10px;
             background: rgba(0,0,0,0.6); padding: 8px 15px; border-radius: 20px; width: fit-content; pointer-events: auto;
         }
         .zoom-control input[type="range"] { width: 150px; }
@@ -119,11 +109,6 @@
         .btn-info { background-color: #17a2b8; width: 100%; margin-bottom: 10px; }
         .btn-secondary { background-color: #6c757d; width: 100%; margin-bottom: 10px; }
         .btn-start { background-color: #28a745; font-size: 1.5rem; padding: 20px 40px; border-radius: 50px; }
-        .btn-restart { background-color: #ff9800; font-size: 1.3rem; padding: 20px; border-radius: 12px; width: 90%; max-width: 400px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-        
-        .toggle-btn {
-            background: rgba(255,255,255,0.2); font-size: 0.8rem; padding: 5px 10px; border-radius: 4px; pointer-events: auto; margin-top: 5px;
-        }
 
         /* 結果表示 */
         .result-overlay {
@@ -145,7 +130,11 @@
             color: white; font-size: 1.2rem; font-weight: bold; text-shadow: 1px 1px 3px #000;
         }
         .screenshot-controls {
-            margin: 20px; display: flex; flex-direction: column; gap: 10px;
+            margin: 20px; display: flex; flex-direction: column; gap: 10px; text-align: center;
+        }
+        .instruction-text {
+            background: rgba(0,0,0,0.7); color: #fff; padding: 15px; border-radius: 10px;
+            margin-bottom: 15px; font-weight: bold; line-height: 1.5; font-size: 1.1rem;
         }
 
         /* ステップ */
@@ -168,7 +157,7 @@
     <div id="realtime-height">0.0 m</div>
 
     <div id="start-overlay">
-        <h1 style="margin-bottom:10px;">樹高測定 v1.6<br><small>ズーム機能・画像保存版</small></h1>
+        <h1 style="margin-bottom:10px;">樹高測定 v1.7<br></h1>
         <p style="font-size:0.9rem; color:#ccc; margin-bottom:30px;">
             位置情報(GPS)へのアクセスを許可すると、<br>証拠写真に緯度経度を合成できます。
         </p>
@@ -176,21 +165,8 @@
         <p id="error-log" style="color:red; margin-top:20px; font-size:0.8rem;"></p>
     </div>
 
-    <div id="restart-overlay">
-        <h2 style="color:#28a745; margin-bottom:10px;">画像保存完了</h2>
-        <p style="font-size:0.95rem; color:#ddd; margin-bottom:40px; line-height:1.6;">
-            画像をダウンロードしました。<br>
-            iOSの仕様上、保存時にカメラやセンサーが<br>一時停止することがあります。<br>
-            続けて測定を行う場合は、<br>下のボタンを押してください。
-        </p>
-        <button class="btn-restart" onclick="reconnectSensor()">🔄 センサー再許可・次へ進む</button>
-    </div>
-
+    <!-- UI上部: 角度表示を削除し、ズームのみに -->
     <div class="top-info" id="top-ui" style="display:none;">
-        <div class="debug-info">Sensor Raw: <span id="raw-beta">--</span></div>
-        <div class="angle-display" id="angle-val">--°</div>
-        <button class="toggle-btn" onclick="toggleInvert()">🔄 角度のプラス/マイナスを反転</button>
-        
         <div class="zoom-control">
             <span style="font-size: 1.2rem;">🔍</span>
             <input type="range" id="zoom-slider" min="1" max="10" step="0.1" value="1" oninput="updateZoom()">
@@ -228,24 +204,25 @@
         </div>
     </div>
 
+    <!-- スクリーンショット案内UI -->
     <div id="screenshot-ui">
         <div class="screenshot-info" id="screenshot-info-box">
             樹高: <span id="ss-height">--</span> m<br>
             <span id="ss-gps" style="font-size:0.9rem; font-weight:normal;">位置情報取得中...</span>
         </div>
         <div class="screenshot-controls">
-            <button class="btn-success" style="font-size:1.5rem; padding:20px;" onclick="takeScreenshot()">⭕ 合成して保存 (ダウンロード)</button>
-            <button class="btn-secondary" onclick="resetApp()">キャンセル (次へ)</button>
+            <div class="instruction-text">
+                この画面のまま、端末の機能で<br>スクリーンショットを撮影してください。
+            </div>
+            <button class="btn-success" style="font-size:1.3rem; padding:15px;" onclick="resetApp()">撮影完了 (次へ)</button>
         </div>
     </div>
 
     <script>
         // 変数
         let currentAngle = 0;
-        let rawBeta = 0;
         let step = 1;
         let angles = { 1: null, 2: null, 3: null }; 
-        let isInverted = false;
         
         let finalHeightVal = "0.0";
         let currentLat = null;
@@ -294,45 +271,12 @@
             }
         }
 
-        // 🌟 画像保存後のセンサー強制再起動ロジック
-        async function reconnectSensor() {
-            try {
-                // ユーザーアクションをトリガーにして再度権限確認・カメラ復旧を行う
-                if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                    await DeviceOrientationEvent.requestPermission();
-                }
-
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { 
-                        facingMode: 'environment',
-                        width: { ideal: 1920, max: 3840 },
-                        height: { ideal: 1080, max: 2160 }
-                    } 
-                });
-                document.getElementById('camera-view').srcObject = stream;
-                
-                // オーバーレイを隠して通常状態へリセット
-                document.getElementById('restart-overlay').style.display = 'none';
-                resetApp();
-            } catch (e) {
-                console.error(e);
-                alert("再起動エラー: " + e.message + "\nページをリロードしてください。");
-                document.getElementById('restart-overlay').style.display = 'none';
-                resetApp();
-            }
-        }
-
         function handleOrientation(event) {
             let beta = event.beta; 
             if (beta === null) return;
             
-            rawBeta = beta;
-            document.getElementById('raw-beta').textContent = beta.toFixed(1);
-
-            let tilt = 90 - beta;
-            if (isInverted) tilt = -1 * tilt;
-            currentAngle = tilt;
-            document.getElementById('angle-val').textContent = currentAngle.toFixed(1) + "°";
+            // 角度計算のみ行い、画面表示はしない
+            currentAngle = 90 - beta;
 
             // リアルタイム表示
             if (step === 3 && angles[1] !== null && angles[2] !== null) {
@@ -350,10 +294,6 @@
                     document.getElementById('realtime-height').textContent = Math.abs(H).toFixed(1) + " m";
                 }
             }
-        }
-
-        function toggleInvert() {
-            isInverted = !isInverted;
         }
 
         function updateZoom() {
@@ -444,50 +384,6 @@
             }
         }
 
-        function takeScreenshot() {
-            const video = document.getElementById('camera-view');
-            const canvas = document.createElement('canvas');
-            
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            const ctx = canvas.getContext('2d');
-
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-            const fontSize = Math.floor(canvas.width * 0.03); 
-            ctx.font = `bold ${fontSize}px sans-serif`;
-            ctx.fillStyle = "#ffffff";
-            ctx.strokeStyle = "#000000";
-            ctx.lineWidth = Math.max(2, fontSize / 10);
-
-            const textHeight = `樹高: ${finalHeightVal} m`;
-            const textGPS = currentLat ? `Lat: ${currentLat.toFixed(5)}, Lon: ${currentLon.toFixed(5)}` : "GPSデータなし";
-            const dateStr = new Date().toLocaleString();
-
-            const marginX = fontSize;
-            const marginY = fontSize * 1.5;
-
-            ctx.strokeText(textHeight, marginX, marginY);
-            ctx.fillText(textHeight, marginX, marginY);
-            
-            ctx.strokeText(textGPS, marginX, marginY + fontSize * 1.2);
-            ctx.fillText(textGPS, marginX, marginY + fontSize * 1.2);
-
-            ctx.strokeText(dateStr, marginX, marginY + fontSize * 2.4);
-            ctx.fillText(dateStr, marginX, marginY + fontSize * 2.4);
-
-            const dataURL = canvas.toDataURL('image/jpeg', 0.9);
-            const a = document.createElement('a');
-            a.href = dataURL;
-            const timeTag = new Date().toISOString().replace(/[:.]/g, '-').slice(0,19);
-            a.download = `TreeHeight_${timeTag}.jpg`;
-            a.click();
-
-            // 🌟 画像ダウンロード後、UIを「再起動オーバーレイ」へ切り替え
-            document.getElementById('screenshot-ui').style.display = 'none';
-            document.getElementById('restart-overlay').style.display = 'flex';
-        }
-
         function resetApp() {
             step = 1;
             angles = { 1: null, 2: null, 3: null };
@@ -513,6 +409,12 @@
             
             document.getElementById('zoom-slider').value = 1;
             updateZoom();
+
+            // iOS対策 (念のためカメラを再駆動)
+            const video = document.getElementById('camera-view');
+            if (video && video.paused) {
+                video.play().catch(e => console.error("Camera play error:", e));
+            }
         }
     </script>
     
