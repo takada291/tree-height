@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tree-height-v1.6.1';
+const CACHE_NAME = 'tree-height-v1.7.0';
 const urlsToCache = [
   './',
   'index.html',
